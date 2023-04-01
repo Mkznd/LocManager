@@ -6,6 +6,7 @@ namespace LocManager;
 public partial class Form1 : Form
 {
     private readonly List<LocEntry> _entries = new();
+    private TreeNode? selectedNode = null;
 
     public Form1()
     {
@@ -37,33 +38,73 @@ public partial class Form1 : Form
     private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
     {
         var entry = GetEntryFromSelectedNode(e);
-        ShowEntryDetails(entry);
+        if (entry != null)
+            ShowEntryDetails(entry);
     }
 
-    private LocEntry GetEntryFromSelectedNode(TreeViewEventArgs e)
+    private LocEntry? GetEntryFromSelectedNode(TreeViewEventArgs e)
     {
-        var selectedEntry = e.Node;
-        var entry = _entries.First(locEntry => locEntry.EntryName == selectedEntry?.Text);
+        selectedNode = e.Node ?? throw new InvalidOperationException();
+        LocEntry? entry = GetEntryByName(selectedNode.Text);
         return entry;
+    }
+
+    private LocEntry? GetEntryByName(string text)
+    {
+        return _entries.FirstOrDefault(locEntry => locEntry.EntryName.Equals(text, StringComparison.OrdinalIgnoreCase));
     }
 
     private void ShowEntryDetails(LocEntry entry)
     {
         textBox1.Text = entry.HierarchyPath;
         richTextBox1.Text = entry.EntryName;
-        ClearListView();
-        ShowEntryLanguageInListView(entry);
+        ClearListView(lstDetails);
+        ShowEntryInDetailsListView(entry);
+        ShowEntryInSearchListView(entry);
     }
 
-    private void ShowEntryLanguageInListView(LocEntry entry)
+    private void ShowEntryInDetailsListView(LocEntry entry)
     {
         var lang = entry.Translations.Keys.FirstOrDefault().ToString();
         var trans = entry.Translations.Values.FirstOrDefault();
-        listView1.Items.Add(lang).SubItems.Add(trans);
+        lstDetails.Items.Add(lang).SubItems.Add(trans);
     }
 
-    private void ClearListView()
+    private void ShowEntryInSearchListView(LocEntry entry)
     {
-        listView1.Items.Clear();
+        var loc = entry.LocKey;
+        var path = entry.HierarchyPath;
+        var trans = entry.Translations.Values.FirstOrDefault();
+
+        var listRow = lstSearch.Items.Add(loc);
+        listRow.SubItems.Add(path);
+        listRow.SubItems.Add(trans);
+    }
+
+    private void ClearListView(ListView view)
+    {
+        view.Items.Clear();
+    }
+
+    private void btnSearch_Click(object sender, EventArgs e)
+    {
+        PerformSearch();
+    }
+
+    private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
+    {
+        if(e.KeyChar == (char)Keys.Enter)
+        {
+            PerformSearch();
+        }
+    }
+    private void PerformSearch()
+    {
+        var searchedEntry = GetEntryByName(txtSearch.Text);
+        if (searchedEntry != null)
+        {
+            ClearListView(lstSearch);
+            ShowEntryInSearchListView(searchedEntry);
+        }
     }
 }
