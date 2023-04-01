@@ -41,6 +41,7 @@
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.treeView = new System.Windows.Forms.TreeView();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
@@ -58,6 +59,10 @@
             this.Translation = new System.Windows.Forms.ColumnHeader();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.newGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newSubgroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.locEntryBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.menuStrip1.SuspendLayout();
@@ -71,6 +76,7 @@
             this.tableLayoutPanel2.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.contextMenuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.locEntryBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -162,11 +168,24 @@
             // treeView
             // 
             this.treeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeView.ImageIndex = 0;
+            this.treeView.ImageList = this.imageList1;
+            this.treeView.LabelEdit = true;
             this.treeView.Location = new System.Drawing.Point(0, 0);
             this.treeView.Name = "treeView";
+            this.treeView.SelectedImageIndex = 0;
             this.treeView.Size = new System.Drawing.Size(261, 437);
             this.treeView.TabIndex = 0;
-            this.treeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeView_AfterSelect);
+            this.treeView.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.treeView_NodeMouseClick);
+            this.treeView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.treeView1_MouseUp);
+            // 
+            // imageList1
+            // 
+            this.imageList1.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "file.ico");
+            this.imageList1.Images.SetKeyName(1, "folder.ico");
             // 
             // tabControl1
             // 
@@ -335,6 +354,36 @@
             this.textBox1.TabIndex = 0;
             this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.newGroupToolStripMenuItem,
+            this.newSubgroupToolStripMenuItem,
+            this.deleteGroupToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 70);
+            // 
+            // newGroupToolStripMenuItem
+            // 
+            this.newGroupToolStripMenuItem.Name = "newGroupToolStripMenuItem";
+            this.newGroupToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.newGroupToolStripMenuItem.Text = "New group";
+            this.newGroupToolStripMenuItem.Click += new System.EventHandler(this.newGroupToolStripMenuItem_Click);
+            // 
+            // newSubgroupToolStripMenuItem
+            // 
+            this.newSubgroupToolStripMenuItem.Name = "newSubgroupToolStripMenuItem";
+            this.newSubgroupToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.newSubgroupToolStripMenuItem.Text = "New subgroup";
+            this.newSubgroupToolStripMenuItem.Click += new System.EventHandler(this.newSubgroupToolStripMenuItem_Click);
+            // 
+            // deleteGroupToolStripMenuItem
+            // 
+            this.deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
+            this.deleteGroupToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.deleteGroupToolStripMenuItem.Text = "Delete group";
+            this.deleteGroupToolStripMenuItem.Click += new System.EventHandler(this.deleteGroupToolStripMenuItem_Click);
+            // 
             // openFileDialog1
             // 
             this.openFileDialog1.Filter = "zip files (*.zip)|*.zip|All files (*.*)|*.*\"";
@@ -372,6 +421,7 @@
             this.tabPage2.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.contextMenuStrip1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.locEntryBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -410,5 +460,10 @@
         private ColumnHeader LocKey;
         private ColumnHeader Path;
         private ColumnHeader Debug;
+        private ImageList imageList1;
+        private ContextMenuStrip contextMenuStrip1;
+        private ToolStripMenuItem newGroupToolStripMenuItem;
+        private ToolStripMenuItem newSubgroupToolStripMenuItem;
+        private ToolStripMenuItem deleteGroupToolStripMenuItem;
     }
 }

@@ -1,16 +1,27 @@
 using System.IO.Compression;
 using Newtonsoft.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace LocManager;
 
 public partial class Form1 : Form
 {
+    private const string newGroupString = "<NEW GROUP>";
+    private const string rootString = "<ROOT>";
+
     private readonly List<LocEntry> _entries = new();
     private TreeNode? selectedNode = null;
 
     public Form1()
     {
         InitializeComponent();
+        AddDefaultRoot();
+    }
+
+    private void AddDefaultRoot()
+    {
+        var node = new TreeNode(rootString, imageIndex: 1, selectedImageIndex: 1);
+        treeView.Nodes.Add(node);
     }
 
     //https://stackoverflow.com/questions/31774795/deserialize-json-from-file-in-c-sharp
@@ -34,15 +45,7 @@ public partial class Form1 : Form
                      ?? throw new InvalidOperationException());
     }
 
-
-    private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
-    {
-        var entry = GetEntryFromSelectedNode(e);
-        if (entry != null)
-            ShowEntryDetails(entry);
-    }
-
-    private LocEntry? GetEntryFromSelectedNode(TreeViewEventArgs e)
+    private LocEntry? GetEntryFromSelectedNode(TreeNodeMouseClickEventArgs e)
     {
         selectedNode = e.Node ?? throw new InvalidOperationException();
         LocEntry? entry = GetEntryByName(selectedNode.Text);
@@ -60,7 +63,6 @@ public partial class Form1 : Form
         richTextBox1.Text = entry.EntryName;
         ClearListView(lstDetails);
         ShowEntryInDetailsListView(entry);
-        ShowEntryInSearchListView(entry);
     }
 
     private void ShowEntryInDetailsListView(LocEntry entry)
@@ -106,5 +108,128 @@ public partial class Form1 : Form
             ClearListView(lstSearch);
             ShowEntryInSearchListView(searchedEntry);
         }
+    }
+
+    private void treeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+    {
+        var entry = GetEntryFromSelectedNode(e);
+        if (entry != null)
+            ShowEntryDetails(entry);
+    }
+    private void treeView1_MouseUp(object sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Right)
+        {
+            PerformRightClickOnTreeView(e);
+        }
+    }
+
+    private void PerformRightClickOnTreeView(MouseEventArgs e)
+    {
+        TreeNode clickedNode = treeView.GetNodeAt(e.X, e.Y);
+
+        if (clickedNode is null) return;
+        SelectNode(clickedNode);
+        TryOpenContextMenu(clickedNode, e.Location);
+    }
+
+    private void SelectNode(TreeNode clickedNode)
+    {
+        treeView.SelectedNode = clickedNode;
+        selectedNode = clickedNode;
+    }
+
+    private void TryOpenContextMenu(TreeNode node, Point p)
+    {
+        var canOpenMenu = !IsLeaf(node) || IsRootNode(node);
+
+        if (!canOpenMenu) return;
+        contextMenuStrip1.Show(treeView.PointToScreen(p));
+    }
+
+    private bool IsRootNode(TreeNode node)
+    {
+        return node.Parent is null;
+    }
+
+    private bool IsLeaf(TreeNode node)
+    {
+        return (node.Nodes.Count == 0 && node.ImageIndex == 0);
+    }
+
+    private bool IsOnlyDefaultRoot()
+    {
+        return treeView.Nodes.Count == 1 && treeView.Nodes[0].Text == rootString;
+    }
+
+    private void newGroupToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (IsOnlyDefaultRoot())
+        {
+            selectedNode?.BeginEdit();
+            return;
+        }
+        AddNewNeighborGroupToSelectedNode();
+    }
+
+    private void AddNewNeighborGroupToSelectedNode()
+    {
+        if (selectedNode is null) return;
+        var parent = selectedNode.Parent;
+        var node = new TreeNode(newGroupString, imageIndex: 1, selectedImageIndex: 1);
+        _ = parent is null ? treeView.Nodes.Add(node) : parent.Nodes.Add(node);
+        node.BeginEdit();
+    }
+
+    private void newSubgroupToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (IsOnlyDefaultRoot())
+        {
+            ShowError("Can't add subgroup to default root", "ERROR");
+            return;
+        }
+        AddNewChilldGroupToSelectedNode();
+    }
+
+    private void AddNewChilldGroupToSelectedNode()
+    {
+        if (selectedNode is null) return;
+        var node = new TreeNode(newGroupString, imageIndex: 1, selectedImageIndex: 1);
+        selectedNode.Nodes.Add(node);
+        selectedNode.Expand();
+        node.BeginEdit();
+    }
+
+    private void ShowError(string text, string title)
+    {
+        MessageBox.Show(text, title,
+            MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+
+    private void deleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (CountNodes(treeView.Nodes) < 2)
+        {
+            ShowError("Can't delete the only group", "ERROR");
+            return;
+        }
+        deleteSelectedGroup();
+    }
+
+    private void deleteSelectedGroup()
+    {
+        if (selectedNode is null) return;
+        selectedNode.Remove();
+        selectedNode = null;
+    }
+
+    private int CountNodes(TreeNodeCollection nodes)
+    {
+        int count = nodes.Count;
+        foreach (TreeNode node in nodes)
+        {
+            count += CountNodes(node.Nodes);
+        }
+        return count;
     }
 }

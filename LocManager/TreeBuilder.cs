@@ -1,9 +1,12 @@
-﻿namespace LocManager;
+﻿using System.Xml.Linq;
+
+namespace LocManager;
 
 public static class TreeBuilder
 {
     public static void BuildTree(List<LocEntry> entries, TreeView treeView)
     {
+        treeView.Nodes.Clear();
         foreach (var entry in entries) ProcessEntry(entry, treeView);
     }
 
@@ -24,8 +27,9 @@ public static class TreeBuilder
 
     private static TreeNodeCollection AddNewNonLeafNodeToTree(TreeNodeCollection nodes, string label)
     {
-        var a = nodes.Add(label);
-        return a.Nodes;
+        var node = new TreeNode(label, imageIndex: 1, selectedImageIndex: 1);
+        nodes.Add(node);
+        return node.Nodes;
     }
 
     private static TreeNodeCollection? TrySeekNodesWithTextSameAsLabel(TreeNodeCollection nodes, string label)
@@ -39,6 +43,7 @@ public static class TreeBuilder
 
     private static void AddNewEntryAsLeaf(TreeNodeCollection nodes, string name)
     {
-        nodes.Add(name);
+        var node = new TreeNode(name, imageIndex: 0, selectedImageIndex: 0);
+        nodes.Add(node);
     }
 }
