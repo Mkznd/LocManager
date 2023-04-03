@@ -14,7 +14,7 @@ namespace LocManager
         English,
         Polish,
         Spanish,
-        Potugees,
+        Portuguese,
     }
 
     public class LocEntry

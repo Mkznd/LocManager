@@ -1,4 +1,8 @@
+using System.Globalization;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using Newtonsoft.Json;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
@@ -8,14 +12,36 @@ public partial class Form1 : Form
 {
     private const string newGroupString = "<NEW GROUP>";
     private const string rootString = "<ROOT>";
+    private const string debugString = "Debug";
 
     private readonly List<LocEntry> _entries = new();
     private TreeNode? selectedNode = null;
+    private string? selectedLang = null;
 
+    //https://stackoverflow.com/questions/1167361/how-do-i-convert-an-enum-to-a-list-in-c
     public Form1()
     {
         InitializeComponent();
         AddDefaultRoot();
+        var langStrings = Enum.GetValues(typeof(Language))
+            .Cast<Language>()
+            .Select(v => v.ToString())
+            .ToList();
+        foreach (var lang in langStrings)
+        {
+            var a = new ToolStripButton(lang.ToString());
+            a.Click += SelectLanguage;
+            btnTranslate.DropDownItems.Add(a);
+        }
+        selectedLang = debugString;
+
+    }
+
+    private void SelectLanguage(object sender, EventArgs e)
+    {
+        var button = (ToolStripButton)sender;
+        if (button == null) return;
+        selectedLang = button!.Text;
     }
 
     private void AddDefaultRoot()
@@ -67,9 +93,18 @@ public partial class Form1 : Form
 
     private void ShowEntryInDetailsListView(LocEntry entry)
     {
-        var lang = entry.Translations.Keys.FirstOrDefault().ToString();
-        var trans = entry.Translations.Values.FirstOrDefault();
-        lstDetails.Items.Add(lang).SubItems.Add(trans);
+        if (selectedLang is null) return;
+        foreach(var kvp in entry.Translations) {
+            lstDetails.Items.Add(kvp.Key.ToString()).SubItems.Add(kvp.Value);
+        }
+    }
+
+    private string GetTranslatedStringFromSelectedLanguageOrDebug(LocEntry entry)
+    {
+        Language lang = (Language)Enum.Parse(typeof(Language), selectedLang);
+        if (!entry.Translations.ContainsKey(lang))
+                return entry.Translations[(Language)Enum.Parse(typeof(Language), debugString)];
+        return entry.Translations[lang];
     }
 
     private void ShowEntryInSearchListView(LocEntry entry)
@@ -95,7 +130,7 @@ public partial class Form1 : Form
 
     private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
     {
-        if(e.KeyChar == (char)Keys.Enter)
+        if (e.KeyChar == (char)Keys.Enter)
         {
             PerformSearch();
         }
@@ -231,5 +266,30 @@ public partial class Form1 : Form
             count += CountNodes(node.Nodes);
         }
         return count;
+    }
+    private void toolStripSplitButton1_ButtonClick(object sender, EventArgs e)
+    {
+        if (selectedLang != null && selectedLang != debugString && selectedNode != null && IsLeaf(selectedNode!))
+            _ = TranslateSelectedNode();
+    }
+    public async Task TranslateSelectedNode()
+    {
+        CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+        string abbreviation = "";
+        foreach (CultureInfo culture in cultures)
+        {
+            if (culture.EnglishName.Equals(selectedLang, StringComparison.OrdinalIgnoreCase))
+            {
+                abbreviation = culture.TwoLetterISOLanguageName;
+                break;
+            }
+        }
+        if (!string.IsNullOrEmpty(abbreviation)) { }
+        var entry = GetEntryByName(selectedNode!.Text);
+        if (entry == null) return;
+        var message = GetTranslatedStringFromSelectedLanguageOrDebug(entry);
+        var translatedText = await Translator.Translate(message, abbreviation);
+        entry.Translations.Add((Language)Enum.Parse(typeof(Language), selectedLang), translatedText);
+        ShowEntryDetails(entry);
     }
 }
