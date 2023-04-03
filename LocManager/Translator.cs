@@ -56,7 +56,8 @@ namespace LocManager
 {
     public static class Translator
     {
-        private const string Key = "415326c4383a48199236d64495a5b606";
+        private static string Key = System.Environment.GetEnvironmentVariable("AzureKey", EnvironmentVariableTarget.User)
+            ?? throw new InvalidOperationException();
         private const string route = "/translate?api-version=3.0&to=";
         private const string endpoint = "https://api.cognitive.microsofttranslator.com";
         private static readonly HttpClient client = new HttpClient
@@ -66,6 +67,7 @@ namespace LocManager
         };
         public static async Task<string?> Translate(string text, string language)
         {
+            Console.WriteLine(Key);
             object[] body = new object[] { new { Text = text } };
             var requestBody = JsonConvert.SerializeObject(body);
             using (var client = new HttpClient())
@@ -84,7 +86,7 @@ namespace LocManager
                 string result = await response.Content.ReadAsStringAsync();
                 var a = JsonConvert.DeserializeObject<TranslationResult[]>(result);
                 // Iterate over the deserialized results.
-                return a[0].Translations[0].Text;
+                return a?[0].Translations[0].Text;
             }
         }
     }

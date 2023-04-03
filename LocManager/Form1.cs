@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Newtonsoft.Json;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace LocManager;
 
@@ -13,20 +12,29 @@ public partial class Form1 : Form
     private const string newGroupString = "<NEW GROUP>";
     private const string rootString = "<ROOT>";
     private const string debugString = "Debug";
+    private const string locString = "LocKey#";
 
     private readonly List<LocEntry> _entries = new();
     private TreeNode? selectedNode = null;
     private string? selectedLang = null;
+
+    private static readonly CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
     //https://stackoverflow.com/questions/1167361/how-do-i-convert-an-enum-to-a-list-in-c
     public Form1()
     {
         InitializeComponent();
         AddDefaultRoot();
+        InitializeLanguages();
+
+    }
+
+    private void InitializeLanguages()
+    {
         var langStrings = Enum.GetValues(typeof(Language))
-            .Cast<Language>()
-            .Select(v => v.ToString())
-            .ToList();
+                    .Cast<Language>()
+                    .Select(v => v.ToString())
+                    .ToList();
         foreach (var lang in langStrings)
         {
             var a = new ToolStripButton(lang.ToString());
@@ -34,7 +42,6 @@ public partial class Form1 : Form
             btnTranslate.DropDownItems.Add(a);
         }
         selectedLang = debugString;
-
     }
 
     private void SelectLanguage(object sender, EventArgs e)
@@ -93,18 +100,14 @@ public partial class Form1 : Form
 
     private void ShowEntryInDetailsListView(LocEntry entry)
     {
-        if (selectedLang is null) return;
         foreach(var kvp in entry.Translations) {
             lstDetails.Items.Add(kvp.Key.ToString()).SubItems.Add(kvp.Value);
         }
     }
 
-    private string GetTranslatedStringFromSelectedLanguageOrDebug(LocEntry entry)
+    private string GetDebugString(LocEntry entry)
     {
-        Language lang = (Language)Enum.Parse(typeof(Language), selectedLang);
-        if (!entry.Translations.ContainsKey(lang))
-                return entry.Translations[(Language)Enum.Parse(typeof(Language), debugString)];
-        return entry.Translations[lang];
+        return entry.Translations[(Language)Enum.Parse(typeof(Language), debugString)];
     }
 
     private void ShowEntryInSearchListView(LocEntry entry)
@@ -189,7 +192,7 @@ public partial class Form1 : Form
 
     private bool IsLeaf(TreeNode node)
     {
-        return (node.Nodes.Count == 0 && node.ImageIndex == 0);
+        return (node.Nodes.Count == 0 && GetEntryByName(node.Text) != null);
     }
 
     private bool IsOnlyDefaultRoot()
@@ -270,26 +273,109 @@ public partial class Form1 : Form
     private void toolStripSplitButton1_ButtonClick(object sender, EventArgs e)
     {
         if (selectedLang != null && selectedLang != debugString && selectedNode != null && IsLeaf(selectedNode!))
-            _ = TranslateSelectedNode();
+            backgroundWorker1.RunWorkerAsync();
     }
     public async Task TranslateSelectedNode()
     {
-        CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
-        string abbreviation = "";
+        var entry = GetEntryByName(selectedNode!.Text);
+        if (entry is null) return;
+        var lang = GetLanguageFromString(selectedLang!);
+        var abbreviation = GetAbbreviationFromLanguageName(lang.ToString());
+        var message = GetDebugString(entry);
+
+        if (string.IsNullOrEmpty(abbreviation)) return;
+        if (entry.Translations.ContainsKey(lang)) return;
+        var translatedText = await Translator.Translate(message, abbreviation);
+        if (translatedText == null) return;
+        entry.Translations.Add(lang, translatedText);
+    }
+
+    private string GetAbbreviationFromLanguageName(string lang)
+    {
         foreach (CultureInfo culture in cultures)
         {
-            if (culture.EnglishName.Equals(selectedLang, StringComparison.OrdinalIgnoreCase))
+            if (culture.EnglishName.Equals(lang.ToString(), StringComparison.OrdinalIgnoreCase))
             {
-                abbreviation = culture.TwoLetterISOLanguageName;
-                break;
+                return culture.TwoLetterISOLanguageName;
             }
         }
-        if (!string.IsNullOrEmpty(abbreviation)) { }
-        var entry = GetEntryByName(selectedNode!.Text);
-        if (entry == null) return;
-        var message = GetTranslatedStringFromSelectedLanguageOrDebug(entry);
-        var translatedText = await Translator.Translate(message, abbreviation);
-        entry.Translations.Add((Language)Enum.Parse(typeof(Language), selectedLang), translatedText);
-        ShowEntryDetails(entry);
+        return "";
+    }
+
+    private Language GetLanguageFromString(string text)
+    {
+        return (Language)Enum.Parse(typeof(Language), text);
+    }
+
+    private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+    {
+        var a = TranslateSelectedNode();
+        for (int i = 0; i < 10; i++)
+        {
+            if (a.IsCompleted) {
+                backgroundWorker1.ReportProgress(100);
+                return;
+            } 
+            backgroundWorker1.ReportProgress(i * 10);
+            Thread.Sleep(50);
+        }
+
+    }
+
+    private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
+    {
+        toolStripProgressBar1.Value = e.ProgressPercentage;
+    }
+
+    private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+    {
+        toolStripProgressBar1.Value = 0;
+        var a = GetEntryByName(selectedNode.Text);
+        ShowEntryDetails(a);
+    }
+
+    public static Dictionary<string, string> GetTextDictionaryFromTree(List<LocEntry> entries)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (var entry in entries)
+        {
+            result.Add(locString+entry.LocKey, JsonConvert.SerializeObject(entry));
+        }
+        return result;
+    }
+
+    private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+        {
+            string filename = saveFileDialog1.FileName;
+            var archive = CreateZipAchiveAndSave(filename, GetTextDictionaryFromTree(_entries));
+        }
+    }
+
+    private ZipArchive CreateZipAchiveAndSave(string zipFilePath, Dictionary<string, string> fileContents)
+    {
+        if (File.Exists(zipFilePath)) File.Delete(zipFilePath);
+        using var archive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
+        PopulateArchiveWithEntries(fileContents, archive);
+        return archive;
+    }
+
+    private static void PopulateArchiveWithEntries(Dictionary<string, string> fileContents, ZipArchive archive)
+    {
+        foreach (var fileContent in fileContents)
+        {
+            AddEntryToArchive(archive, fileContent);
+        }
+    }
+
+    private static void AddEntryToArchive(ZipArchive archive, KeyValuePair<string, string> fileContent)
+    {
+        var entry = archive.CreateEntry(fileContent.Key);
+
+        using (var writer = new StreamWriter(entry.Open()))
+        {
+            writer.Write(fileContent.Value);
+        }
     }
 }

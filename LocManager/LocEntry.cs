@@ -1,20 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
 namespace LocManager
 {
     public enum Language
     {
-        Debug,
-        English,
-        Polish,
-        Spanish,
-        Portuguese,
+        [Description("EN")] Debug,
+        [Description("EN")] English,
+        [Description("PL")] Polish,
+        [Description("ES")] Spanish,
+        [Description("PT")] Portuguese,
+        [Description("ZH")] Chinese,
+    }
+
+    public static class Enumeration
+    {
+        public static string GetDescription(this Enum value)
+        {
+            FieldInfo fi = value.GetType().GetField(value.ToString());
+
+            DescriptionAttribute[] attributes = fi.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
+
+            if (attributes != null && attributes.Any())
+            {
+                return attributes.First().Description;
+            }
+
+            return value.ToString();
+        }
     }
 
     public class LocEntry

@@ -33,7 +33,6 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newEntryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newEntryToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,6 +68,8 @@
             this.btnTranslate = new System.Windows.Forms.ToolStripSplitButton();
             this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -106,7 +107,6 @@
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.openToolStripMenuItem,
-            this.saveToolStripMenuItem,
             this.saveAsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
@@ -119,17 +119,12 @@
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
-            // saveToolStripMenuItem
-            // 
-            this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
-            this.saveToolStripMenuItem.Text = "Save";
-            // 
             // saveAsToolStripMenuItem
             // 
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
             this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
             this.saveAsToolStripMenuItem.Text = "Save as ..";
+            this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // newEntryToolStripMenuItem
             // 
@@ -400,10 +395,6 @@
             this.openFileDialog1.InitialDirectory = "${current}";
             this.openFileDialog1.Title = "Open text";
             // 
-            // locEntryBindingSource
-            // 
-            this.locEntryBindingSource.DataSource = typeof(LocManager.LocEntry);
-            // 
             // statusStrip1
             // 
             this.statusStrip1.Dock = System.Windows.Forms.DockStyle.None;
@@ -458,6 +449,20 @@
             // 
             this.toolStripContainer1.TopToolStripPanel.Controls.Add(this.menuStrip1);
             // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.WorkerReportsProgress = true;
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
+            this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
+            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
+            // 
+            // saveFileDialog1
+            // 
+            this.saveFileDialog1.FileName = "loco";
+            this.saveFileDialog1.Filter = "Zip Files (*.zip)|*.zip|All Files (*.*)|*.*";
+            this.saveFileDialog1.InitialDirectory = "${current}";
+            this.saveFileDialog1.Title = "Save zip archive";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -504,7 +509,6 @@
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem openToolStripMenuItem;
-        private ToolStripMenuItem saveToolStripMenuItem;
         private ToolStripMenuItem saveAsToolStripMenuItem;
         private ToolStripMenuItem newEntryToolStripMenuItem;
         private ToolStripMenuItem newEntryToolStripMenuItem1;
@@ -540,5 +544,7 @@
         private ToolStripSplitButton btnTranslate;
         private ToolStripProgressBar toolStripProgressBar1;
         private ToolStripContainer toolStripContainer1;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private SaveFileDialog saveFileDialog1;
     }
 }
