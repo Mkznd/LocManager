@@ -140,12 +140,14 @@
             this.newEntryToolStripMenuItem1.Name = "newEntryToolStripMenuItem1";
             this.newEntryToolStripMenuItem1.Size = new System.Drawing.Size(137, 22);
             this.newEntryToolStripMenuItem1.Text = "New Entry";
+            this.newEntryToolStripMenuItem1.Click += new System.EventHandler(this.newEntryToolStripMenuItem1_Click);
             // 
             // deleteEntryToolStripMenuItem
             // 
             this.deleteEntryToolStripMenuItem.Name = "deleteEntryToolStripMenuItem";
             this.deleteEntryToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
             this.deleteEntryToolStripMenuItem.Text = "Delete Entry";
+            this.deleteEntryToolStripMenuItem.Click += new System.EventHandler(this.deleteEntryToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -255,9 +257,10 @@
             // 
             // btnSearch
             // 
+            this.btnSearch.AutoSize = true;
             this.btnSearch.Location = new System.Drawing.Point(402, 3);
             this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(94, 23);
+            this.btnSearch.Size = new System.Drawing.Size(94, 25);
             this.btnSearch.TabIndex = 1;
             this.btnSearch.Text = "Search";
             this.btnSearch.UseVisualStyleBackColor = true;
@@ -346,6 +349,7 @@
             this.richTextBox1.Size = new System.Drawing.Size(493, 108);
             this.richTextBox1.TabIndex = 1;
             this.richTextBox1.Text = "";
+            this.richTextBox1.TextChanged += new System.EventHandler(this.richTextBox1_TextChanged);
             // 
             // textBox1
             // 
@@ -358,6 +362,8 @@
             this.textBox1.Size = new System.Drawing.Size(499, 23);
             this.textBox1.TabIndex = 0;
             this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textBox1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBox1_KeyPress);
+            this.textBox1.Leave += new System.EventHandler(this.textBox1_Leave);
             // 
             // contextMenuStrip1
             // 

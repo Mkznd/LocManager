@@ -1,9 +1,11 @@
+using System.Data.SqlTypes;
 using System.Globalization;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LocManager;
 
@@ -20,7 +22,6 @@ public partial class Form1 : Form
 
     private static readonly CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
-    //https://stackoverflow.com/questions/1167361/how-do-i-convert-an-enum-to-a-list-in-c
     public Form1()
     {
         InitializeComponent();
@@ -28,7 +29,7 @@ public partial class Form1 : Form
         InitializeLanguages();
 
     }
-
+    //https://stackoverflow.com/questions/1167361/how-do-i-convert-an-enum-to-a-list-in-c
     private void InitializeLanguages()
     {
         var langStrings = Enum.GetValues(typeof(Language))
@@ -53,16 +54,36 @@ public partial class Form1 : Form
 
     private void AddDefaultRoot()
     {
-        var node = new TreeNode(rootString, imageIndex: 1, selectedImageIndex: 1);
+        var node = GetNewGroup(rootString);
         treeView.Nodes.Add(node);
+    }
+
+    private TreeNode GetNewGroup(string text)
+    {
+        return new TreeNode(text, imageIndex: 1, selectedImageIndex: 1);
+    }
+
+    private TreeNode GetNewLeaf(string text)
+    {
+        return new TreeNode(text, imageIndex: 0, selectedImageIndex: 0);
     }
 
     //https://stackoverflow.com/questions/31774795/deserialize-json-from-file-in-c-sharp
     private void openToolStripMenuItem_Click(object sender, EventArgs e)
     {
         if (openFileDialog1.ShowDialog() != DialogResult.OK) return;
+        treeView.Nodes.Clear();
+        _entries.Clear();
+        ClearDetails();
         PopulateEntriesFromZip();
         TreeBuilder.BuildTree(_entries, treeView);
+    }
+
+    private void ClearDetails()
+    {
+        textBox1.Text = string.Empty;
+        richTextBox1.Text = string.Empty;
+        lstDetails.Items.Clear();
     }
 
     private void PopulateEntriesFromZip()
@@ -81,31 +102,26 @@ public partial class Form1 : Form
     private LocEntry? GetEntryFromSelectedNode(TreeNodeMouseClickEventArgs e)
     {
         selectedNode = e.Node ?? throw new InvalidOperationException();
-        LocEntry? entry = GetEntryByName(selectedNode.Text);
+        LocEntry? entry = GetEntryFromNode(selectedNode);
         return entry;
     }
-
-    private LocEntry? GetEntryByName(string text)
-    {
-        return _entries.FirstOrDefault(locEntry => locEntry.EntryName.Equals(text, StringComparison.OrdinalIgnoreCase));
-    }
-
     private void ShowEntryDetails(LocEntry entry)
     {
         textBox1.Text = entry.HierarchyPath;
-        richTextBox1.Text = entry.EntryName;
-        ClearListView(lstDetails);
+        richTextBox1.Text = GetValueOfKeyDebugString(entry);
         ShowEntryInDetailsListView(entry);
     }
 
     private void ShowEntryInDetailsListView(LocEntry entry)
     {
-        foreach(var kvp in entry.Translations) {
+        ClearListView(lstDetails);
+        foreach (var kvp in entry.Translations)
+        {
             lstDetails.Items.Add(kvp.Key.ToString()).SubItems.Add(kvp.Value);
         }
     }
 
-    private string GetDebugString(LocEntry entry)
+    private string GetValueOfKeyDebugString(LocEntry entry)
     {
         return entry.Translations[(Language)Enum.Parse(typeof(Language), debugString)];
     }
@@ -140,12 +156,20 @@ public partial class Form1 : Form
     }
     private void PerformSearch()
     {
-        var searchedEntry = GetEntryByName(txtSearch.Text);
-        if (searchedEntry != null)
+        ClearListView(lstSearch);
+        var searchedEntries = GetEntryContainingSubstring(txtSearch.Text);
+        foreach (var entry in searchedEntries)
         {
-            ClearListView(lstSearch);
-            ShowEntryInSearchListView(searchedEntry);
+            if (entry != null)
+            {
+                ShowEntryInSearchListView(entry);
+            }
         }
+    }
+
+    private List<LocEntry> GetEntryContainingSubstring(string text)
+    {
+        return _entries.Where(locEntry => locEntry.EntryName.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     private void treeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -192,7 +216,7 @@ public partial class Form1 : Form
 
     private bool IsLeaf(TreeNode node)
     {
-        return (node.Nodes.Count == 0 && GetEntryByName(node.Text) != null);
+        return (node.Nodes.Count == 0 && GetEntryFromNode(node) != null);
     }
 
     private bool IsOnlyDefaultRoot()
@@ -214,7 +238,7 @@ public partial class Form1 : Form
     {
         if (selectedNode is null) return;
         var parent = selectedNode.Parent;
-        var node = new TreeNode(newGroupString, imageIndex: 1, selectedImageIndex: 1);
+        var node = GetNewGroup(newGroupString);
         _ = parent is null ? treeView.Nodes.Add(node) : parent.Nodes.Add(node);
         node.BeginEdit();
     }
@@ -232,7 +256,7 @@ public partial class Form1 : Form
     private void AddNewChilldGroupToSelectedNode()
     {
         if (selectedNode is null) return;
-        var node = new TreeNode(newGroupString, imageIndex: 1, selectedImageIndex: 1);
+        var node = GetNewGroup(newGroupString);
         selectedNode.Nodes.Add(node);
         selectedNode.Expand();
         node.BeginEdit();
@@ -277,11 +301,11 @@ public partial class Form1 : Form
     }
     public async Task TranslateSelectedNode()
     {
-        var entry = GetEntryByName(selectedNode!.Text);
+        var entry = GetEntryFromNode(selectedNode!);
         if (entry is null) return;
         var lang = GetLanguageFromString(selectedLang!);
         var abbreviation = GetAbbreviationFromLanguageName(lang.ToString());
-        var message = GetDebugString(entry);
+        var message = GetValueOfKeyDebugString(entry);
 
         if (string.IsNullOrEmpty(abbreviation)) return;
         if (entry.Translations.ContainsKey(lang)) return;
@@ -312,12 +336,13 @@ public partial class Form1 : Form
         var a = TranslateSelectedNode();
         for (int i = 0; i < 10; i++)
         {
-            if (a.IsCompleted) {
+            if (a.IsCompleted)
+            {
                 backgroundWorker1.ReportProgress(100);
                 return;
-            } 
+            }
             backgroundWorker1.ReportProgress(i * 10);
-            Thread.Sleep(50);
+            Thread.Sleep(100);
         }
 
     }
@@ -329,8 +354,9 @@ public partial class Form1 : Form
 
     private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
     {
+        Thread.Sleep(300);
         toolStripProgressBar1.Value = 0;
-        var a = GetEntryByName(selectedNode.Text);
+        var a = GetEntryFromNode(selectedNode);
         ShowEntryDetails(a);
     }
 
@@ -339,7 +365,7 @@ public partial class Form1 : Form
         var result = new Dictionary<string, string>();
         foreach (var entry in entries)
         {
-            result.Add(locString+entry.LocKey, JsonConvert.SerializeObject(entry));
+            result.Add(locString + entry.LocKey, JsonConvert.SerializeObject(entry));
         }
         return result;
     }
@@ -349,7 +375,8 @@ public partial class Form1 : Form
         if (saveFileDialog1.ShowDialog() == DialogResult.OK)
         {
             string filename = saveFileDialog1.FileName;
-            var archive = CreateZipAchiveAndSave(filename, GetTextDictionaryFromTree(_entries));
+            var dict = GetTextDictionaryFromTree(_entries);
+            var archive = CreateZipAchiveAndSave(filename, dict);
         }
     }
 
@@ -371,11 +398,130 @@ public partial class Form1 : Form
 
     private static void AddEntryToArchive(ZipArchive archive, KeyValuePair<string, string> fileContent)
     {
-        var entry = archive.CreateEntry(fileContent.Key);
+        var entry = archive.CreateEntry(fileContent.Key + ".txt");
 
         using (var writer = new StreamWriter(entry.Open()))
         {
             writer.Write(fileContent.Value);
         }
+    }
+
+    private void newEntryToolStripMenuItem1_Click(object sender, EventArgs e)
+    {
+        if (selectedNode == null || IsLeaf(selectedNode) || IsOnlyDefaultRoot()) return;
+        var path = GetNodePathWithName(selectedNode);
+        var startingString = path + "-";
+        tabControl1.SelectedTab = tabPage2;
+        richTextBox1.Clear();
+        textBox1.ReadOnly = false;
+        textBox1.Focus();
+        textBox1.Text = startingString;
+        textBox1.SelectionStart = textBox1.TextLength;
+    }
+
+    private string GetNodePathWithName(TreeNode node)
+    {
+        if (node.Parent == null)
+        {
+            return node.Text;
+        }
+        else
+        {
+            return GetNodePathWithName(node.Parent) + "-" + node.Text;
+        }
+    }
+
+    private string GetNodePath(TreeNode node)
+    {
+        if (node == null)
+        {
+            return string.Empty;
+        }
+
+        var path = new List<string>();
+        while (node != null)
+        {
+            path.Add(node.Text);
+            node = node.Parent;
+        }
+
+        path.Reverse();
+        path.RemoveAt(path.Count - 1);
+
+        return string.Join("-", path);
+    }
+
+    private void textBox1_Leave(object sender, EventArgs e)
+    {
+        if (textBox1.ReadOnly || selectedNode is null) return;
+        textBox1.ReadOnly = true;
+        var labels = textBox1.Text.Split("-");
+        var name = labels.Last();
+        if (string.IsNullOrEmpty(name))
+        {
+            ShowError("Name can't be empty", "ERROR");
+            textBox1.Text = string.Empty;
+            return;
+        }
+        var node = AddNewChildLeafToSelectedGroup(name);
+        if (GetEntryFromNode(node) != null)
+        {
+            ShowError("Can't create entries with the same name", "ERROR");
+            textBox1.Text = string.Empty;
+            node.Parent.Nodes.Remove(node);
+            return;
+        }
+        var entry = CreateNewEntryFromNode(node);
+        _entries.Add(entry);
+        ShowEntryDetails(entry);
+
+        SelectNode(node);
+    }
+
+    private LocEntry CreateNewEntryFromNode(TreeNode node)
+    {
+        var entry = new LocEntry(GetNodePath(node), node.Text);
+        entry.Translations[GetLanguageFromString(debugString)] = "";
+
+        return entry;
+    }
+
+    private TreeNode AddNewChildLeafToSelectedGroup(string name)
+    {
+        var node = GetNewLeaf(name);
+        selectedNode.Nodes.Add(node);
+        return node;
+    }
+
+    private void textBox1_KeyPress(object sender, KeyPressEventArgs e)
+    {
+        if (e.KeyChar == (char)Keys.Enter)
+        {
+            SelectNextControl((Control)sender, true, true, true, true);
+        }
+    }
+
+    private void richTextBox1_TextChanged(object sender, EventArgs e)
+    {
+        if (selectedNode is null) return;
+        var entry = GetEntryFromNode(selectedNode);
+        if (entry is null) return;
+        entry.Translations[GetLanguageFromString(debugString)] = ((RichTextBox)sender).Text;
+        ShowEntryInDetailsListView(entry);
+    }
+
+    private void deleteEntryToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (selectedNode is null || !IsLeaf(selectedNode)) return;
+        var entry = GetEntryFromNode(selectedNode);
+        if (entry is null) return;
+        _entries.Remove(entry);
+        selectedNode.Parent.Nodes.Remove(selectedNode);
+    }
+
+    private LocEntry? GetEntryFromNode(TreeNode node)
+    {
+        var entry = _entries.FirstOrDefault(e => string.Equals($"{e.HierarchyPath}-{e.EntryName}", GetNodePathWithName(node)));
+        return entry;
     }
 }
