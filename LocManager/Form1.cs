@@ -16,7 +16,7 @@ public partial class Form1 : Form
     private const string debugString = "Debug";
     private const string locString = "LocKey#";
 
-    private readonly List<LocEntry> _entries = new();
+    private List<LocEntry> _entries = new();
     private TreeNode? selectedNode = null;
     private string? selectedLang = null;
 
@@ -38,7 +38,7 @@ public partial class Form1 : Form
                     .ToList();
         foreach (var lang in langStrings)
         {
-            var a = new ToolStripButton(lang.ToString());
+            var a = new ToolStripMenuItem(lang.ToString());
             a.Click += SelectLanguage;
             btnTranslate.DropDownItems.Add(a);
         }
@@ -47,9 +47,20 @@ public partial class Form1 : Form
 
     private void SelectLanguage(object sender, EventArgs e)
     {
-        var button = (ToolStripButton)sender;
-        if (button == null) return;
+        var button = (ToolStripMenuItem)sender;
+        if (button is null) return;
         selectedLang = button!.Text;
+        button.Checked = true;
+        UncheckAllButtonsExceptCurrent(button);
+    }
+
+    private void UncheckAllButtonsExceptCurrent(ToolStripMenuItem button)
+    {
+        foreach(ToolStripMenuItem btn in btnTranslate.DropDownItems)
+        {
+            if (btn == button) continue;
+            btn.Checked = false;
+        }
     }
 
     private void AddDefaultRoot()
@@ -174,6 +185,7 @@ public partial class Form1 : Form
 
     private void treeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
     {
+        SelectNode(e.Node);
         var entry = GetEntryFromSelectedNode(e);
         if (entry != null)
             ShowEntryDetails(entry);
@@ -281,6 +293,8 @@ public partial class Form1 : Form
     private void deleteSelectedGroup()
     {
         if (selectedNode is null) return;
+        var group_name = selectedNode.Text;
+        _entries = _entries.Where(e => !e.HierarchyPath.Contains(group_name+'-')).ToList();
         selectedNode.Remove();
         selectedNode = null;
     }
@@ -413,6 +427,11 @@ public partial class Form1 : Form
         var startingString = path + "-";
         tabControl1.SelectedTab = tabPage2;
         richTextBox1.Clear();
+        MakeTextBoxReadyForAddition(startingString);
+    }
+
+    private void MakeTextBoxReadyForAddition(string startingString)
+    {
         textBox1.ReadOnly = false;
         textBox1.Focus();
         textBox1.Text = startingString;

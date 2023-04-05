@@ -66,6 +66,7 @@
             this.locEntryBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.btnTranslate = new System.Windows.Forms.ToolStripSplitButton();
+            this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
@@ -406,6 +407,7 @@
             this.statusStrip1.Dock = System.Windows.Forms.DockStyle.None;
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnTranslate,
+            this.toolStripStatusLabel1,
             this.toolStripProgressBar1});
             this.statusStrip1.Location = new System.Drawing.Point(0, 0);
             this.statusStrip1.Name = "statusStrip1";
@@ -423,6 +425,12 @@
             this.btnTranslate.Size = new System.Drawing.Size(69, 20);
             this.btnTranslate.Text = "Translate";
             this.btnTranslate.ButtonClick += new System.EventHandler(this.toolStripSplitButton1_ButtonClick);
+            // 
+            // toolStripStatusLabel1
+            // 
+            this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(567, 17);
+            this.toolStripStatusLabel1.Spring = true;
             // 
             // toolStripProgressBar1
             // 
@@ -552,5 +560,6 @@
         private ToolStripContainer toolStripContainer1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private SaveFileDialog saveFileDialog1;
+        private ToolStripStatusLabel toolStripStatusLabel1;
     }
 }
